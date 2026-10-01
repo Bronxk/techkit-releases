@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TechKit</title>
+<style>
+:root{color-scheme:light dark;--bg:#fff;--fg:#0c2238;--mute:#4d6075;--blue:#007fc2;--code:#eef3f7;--line:#d5dee6}
+@media (prefers-color-scheme:dark){:root{--bg:#081523;--fg:#e6edf3;--mute:#9db0c2;--blue:#4cc0f5;--code:#0c2238;--line:#12375c}}
+body{margin:0;background:var(--bg);color:var(--fg);font:17px/1.6 system-ui,-apple-system,"Segoe UI",sans-serif}
+main{max-width:40rem;margin:0 auto;padding:3rem 1.25rem 4rem}
+h1{font-size:2rem;margin:0 0 .25rem;letter-spacing:-.01em}
+h2{font-size:1.1rem;margin:2.2rem 0 .4rem}
+p{margin:.5rem 0}.lead{color:var(--mute);font-size:1.1rem}
+pre{background:var(--code);border:1px solid var(--line);border-radius:6px;padding:.9rem 1rem;overflow-x:auto;font-size:.95rem}
+code{font-family:ui-monospace,Consolas,monospace}
+a{color:var(--blue)}.small{color:var(--mute);font-size:.9rem}
+</style>
+</head>
+<body>
+<main>
+<h1>TechKit</h1>
+<p class="lead">Das portable Techniker-Werkzeug von innos für Windows. Eine einzige Datei, keine Installation.</p>
+
+<h2>Starten</h2>
+<p>In Windows PowerShell einfügen:</p>
+<pre><code>irm https://bronxk.github.io/techkit-releases/install.ps1 | iex</code></pre>
+<p>Das Skript lädt die passende Version (x64 oder ARM64), prüft die Datei und startet TechKit. Danach aktualisiert sich das Programm selbst.</p>
+
+<h2>Manuell herunterladen</h2>
+<p><a href="https://github.com/Bronxk/techkit-releases/releases/latest">Neueste Version auf GitHub</a>. Die <code>techkit-windows-amd64.exe</code> ist für normale PCs, die <code>arm64</code> für ARM-Geräte.</p>
+
+<h2>Prüfen</h2>
+<p>Die SHA-256-Prüfsummen stehen als <code>checksums.txt</code> bei jedem Release. Vergleichen mit:</p>
+<pre><code>Get-FileHash .\techkit-windows-amd64.exe -Algorithm SHA256</code></pre>
+<p class="small">Die Update-Listen sind signiert und werden von TechKit geprüft. Die EXE selbst ist noch nicht per Authenticode signiert, SmartScreen kann deshalb warnen.</p>
+
+<p class="small" style="margin-top:2.5rem">Nutzung nur nach Absprache.</p>
+</main>
+</body>
+</html>

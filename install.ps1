@@ -2,6 +2,8 @@
 #   irm <BaseUrl>/install.ps1 | iex
 # Loads the newest techkit.exe for this machine into %LOCALAPPDATA%\TechKit\bin,
 # checks size and SHA-256 against the release manifest and starts it.
+# The first install trusts GitHub Pages over TLS; later in-app updates verify
+# the signed manifest as well. The hash here does not authenticate the manifest.
 # Keep this file ASCII only: PowerShell 5.1 reads scripts without BOM as ANSI.
 
 & {
@@ -16,6 +18,10 @@
     $ErrorActionPreference = 'Stop'
     $ProgressPreference = 'SilentlyContinue'
     [Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12
+    # Invoke-WebRequest uses the system proxy; with the Windows logon it also
+    # gets through proxies that want NTLM/Kerberos (otherwise HTTP 407).
+    $proxy = [System.Net.WebRequest]::DefaultWebProxy
+    if ($proxy) { $proxy.Credentials = [System.Net.CredentialCache]::DefaultCredentials }
 
     function Fail([string]$msg) { throw "TechKit: $msg" }
 
@@ -68,16 +74,34 @@
             Remove-Item -LiteralPath $tmp -Force -ErrorAction SilentlyContinue
             Fail "Pruefsumme passt nicht (erwartet $want, erhalten $got). Datei verworfen."
         }
-        if (Test-Path -LiteralPath $exe) {
-            # a running techkit.exe can be renamed but not overwritten; TechKit removes .old on start
-            Remove-Item -LiteralPath "$exe.old" -Force -ErrorAction SilentlyContinue
-            if (Test-Path -LiteralPath "$exe.old") {
-                Move-Item -LiteralPath $exe -Destination ("$exe." + [DateTime]::UtcNow.Ticks + '.old') -Force
-            } else {
-                Move-Item -LiteralPath $exe -Destination "$exe.old" -Force
+        $backup = $null
+        $oldMoved = $false
+        try {
+            if (Test-Path -LiteralPath $exe) {
+                # A running exe can be renamed. Keep it until the new file is in place.
+                $backup = "$exe.old"
+                Remove-Item -LiteralPath $backup -Force -ErrorAction SilentlyContinue
+                if (Test-Path -LiteralPath $backup) {
+                    $backup = "$exe.$([guid]::NewGuid().ToString('N')).old"
+                }
+                Move-Item -LiteralPath $exe -Destination $backup -ErrorAction Stop
+                $oldMoved = $true
             }
+            Move-Item -LiteralPath $tmp -Destination $exe -ErrorAction Stop
+        } catch {
+            $installError = $_.Exception.Message
+            Remove-Item -LiteralPath $tmp -Force -ErrorAction SilentlyContinue
+            if ($oldMoved) {
+                try {
+                    Remove-Item -LiteralPath $exe -Force -ErrorAction SilentlyContinue
+                    Move-Item -LiteralPath $backup -Destination $exe -ErrorAction Stop
+                } catch {
+                    Fail "Einsetzen fehlgeschlagen ($installError). Bisherige Version liegt unter $backup; Wiederherstellung fehlgeschlagen: $($_.Exception.Message)"
+                }
+                Fail "Einsetzen fehlgeschlagen ($installError). Bisherige Version wurde wiederhergestellt."
+            }
+            Fail "Einsetzen fehlgeschlagen: $installError"
         }
-        Move-Item -LiteralPath $tmp -Destination $exe -Force
         Write-Host "TechKit: Pruefsumme ok, gespeichert unter $exe"
     }
 
